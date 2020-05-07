@@ -8,6 +8,8 @@ module Pod
         class << self
           alias_method :hook_create_or_update_copy_resources_script_phase_to_target, :create_or_update_copy_resources_script_phase_to_target
 
+          alias_method :hook_create_or_update_embed_frameworks_script_phase_to_target, :create_or_update_embed_frameworks_script_phase_to_target
+
           def create_or_update_copy_resources_script_phase_to_target(native_target, script_path, input_paths_by_config = {}, output_paths_by_config = {})
             # CocoaPods 1.7.5 contains bug, when there is one pod using `s.resource = 'ABC.xcassets'`
             # Then the Xcode Input File List should add the `Assets.car` as input file
@@ -29,6 +31,11 @@ module Pod
             return hook_create_or_update_copy_resources_script_phase_to_target(native_target, script_path, input_paths_by_config, output_paths_by_config)
           end
 
+          def create_or_update_embed_frameworks_script_phase_to_target(native_target, script_path, input_paths_by_config = {}, output_paths_by_config = {})
+            phase = TargetIntegrator.create_or_update_shell_script_build_phase(native_target, BUILD_PHASE_PREFIX + EMBED_FRAMEWORK_PHASE_NAME)
+            phase.shell_script = %("#{script_path}"\nfind \"${PODS_ROOT}\" -type f -name *frameworks.sh -exec bash -c \"touch \\\"{}\\\"\" \\;\n)
+            TargetIntegrator.set_input_output_paths(phase, input_paths_by_config, output_paths_by_config)
+          end
 
           def patch_workspace_path
             # Current Workspace's path
