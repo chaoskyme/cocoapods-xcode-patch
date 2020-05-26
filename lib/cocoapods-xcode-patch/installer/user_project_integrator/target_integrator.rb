@@ -28,12 +28,23 @@ module Pod
                 paths << assets_car_path
               end
             end
-            return hook_create_or_update_copy_resources_script_phase_to_target(native_target, script_path, input_paths_by_config, output_paths_by_config)
+            
+            phase = TargetIntegrator.create_or_update_shell_script_build_phase(native_target, BUILD_PHASE_PREFIX + COPY_PODS_RESOURCES_PHASE_NAME)
+            if Config.instance.sandbox.development_pods.empty?
+              phase.shell_script = %("#{script_path}"\n)
+            else
+              phase.shell_script = %("#{script_path}"\nfind \"${PODS_ROOT}\" -type f -name *resources.sh -exec bash -c \"touch \\\"{}\\\"\" \\;\n)
+            end
+            TargetIntegrator.set_input_output_paths(phase, input_paths_by_config, output_paths_by_config)
           end
 
           def create_or_update_embed_frameworks_script_phase_to_target(native_target, script_path, input_paths_by_config = {}, output_paths_by_config = {})
             phase = TargetIntegrator.create_or_update_shell_script_build_phase(native_target, BUILD_PHASE_PREFIX + EMBED_FRAMEWORK_PHASE_NAME)
-            phase.shell_script = %("#{script_path}"\nfind \"${PODS_ROOT}\" -type f -name *frameworks.sh -exec bash -c \"touch \\\"{}\\\"\" \\;\n)
+            if Config.instance.sandbox.development_pods.empty?
+              phase.shell_script = %("#{script_path}"\n)
+            else
+              phase.shell_script = %("#{script_path}"\nfind \"${PODS_ROOT}\" -type f -name *frameworks.sh -exec bash -c \"touch \\\"{}\\\"\" \\;\n)
+            end
             TargetIntegrator.set_input_output_paths(phase, input_paths_by_config, output_paths_by_config)
           end
 
